@@ -51,7 +51,10 @@ def player_search():
 def handle_player_search():
     usr_input = request.form["usr_input"]
     #get player id
-    player_result = user_search(usr_input)[0]
+    result = user_search(usr_input)
+    if result == []:
+        return render_template('not_found.html', usr_input=usr_input)
+    player_result = result[0]
     name = player_result["name"]
     id_ = player_result["account_id"]
     #get recent matches

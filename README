@@ -2,6 +2,12 @@ local sys path in final_project.py should be deleted or modified basing on diffe
 Fetching may take 1-3 minutes to complete.
 Please disable browser caching for proper plot display.
 
+
+A new Dota2 hero, “Hoodwink”, just came out on Dec. 17 night. 
+The API server has not updated with hero data yet. 
+Therefore, the matchup plot in hero page and hero name in recent matches may not be properly displayed.
+
+
 Click "Hero Search", then enter the full name of a dota2 hero for hero details.
 
 Click "Pro Teams", to see the name of some professional teams of different regions.
