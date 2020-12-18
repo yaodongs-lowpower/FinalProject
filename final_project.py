@@ -1092,7 +1092,7 @@ def Heroes_helper(hero_list):
         raw_data = get_data(category, {})
         #if hero info not found in API, use NULLs 
         if raw_data == []:
-            print("========================================HERE========================================")
+            print("========================================HERE=======================================")
             matchup1 = 0
             rate1 = 0
             matchup2 = 0
