@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf8"/>
+        <style>
+            * {
+              box-sizing: border-box;
+            }
+            .center {
+                text-align: center;
+            }
+            h1 {
+                font-size: 70px;
+            }
+            .footer {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                text-align: center;
+                width: 100%;
+                color: black;
+                background-color: rgba(129, 129, 129, 0.623);
+            }
+            /* a navagation bar*/
+            .bar {
+                float: left;
+                width: 25%;
+                padding: 10px;
+                height: 50px;
+                background-color: rgba(129, 129, 129, 0.623);
+                text-align: center;
+                font-size: 25px;
+            }
+            /* Create three equal columns that floats next to each other */
+            .column {
+                float: left;
+                width: 30%;
+                padding: 10px;
+            }
+            .item{
+                width: 10%;
+                padding: 10px;
+            }
+            .column_l {
+                float: left;
+                width: 10%;
+                padding: 10px;
+            }
+            .column_m {
+                float: left;
+                width: 80%;
+                padding: 10px;
+            }
+            .column_r {
+                float: left;
+                width: 10%;
+                padding: 10px;
+            }
+            .column4 {
+                float: left;
+                width: 25%;
+                padding: 10px;
+            }
+            .container{
+                display: flex;
+                flex-wrap: nowrap;
+                justify-content: space-evenly;
+            }
+            /* Clear floats after the columns */
+            .row:after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+
+            .search_box{
+                text-align: center;
+                padding: 10px;
+                height: 200px;
+                background-color: rgba(129, 129, 129, 0.623);
+            }
+            .grey{
+                background-color: rgba(129, 129, 129, 0.623);
+            }
+
+            /*back ground for body*/
+            body {
+                background-image: url("{{ url_for('static', filename = 'background.jpg')}}");
+                background-repeat: no-repeat;
+                background-attachment: fixed; 
+                background-size: 100% 100%;
+            }
+        </style>
+        <title>Dota2 Info App</title>
+        <h1 class="center">Recent Matches</h1>
+    </head>
+    <body>
+        <div class="">
+            <a class="bar" href='/'>Home</a>
+            <a class="bar" href='/hero_search'>Hero Search</a>
+            <a class="bar" href='/teams'>Pro Teams</a>
+            <a class="bar" href='/player_search'>Player Search</a>
+        </div>
+        <br/><br/><br/><br/><br/><br/>
+        <div style="height: 350px">
+            <div class="column_l"></div>
+            <div class="column_m center grey">
+                <h2>{{name}}</h2>
+                <div class="container">
+                    <div class="=item">
+                        <h3>W/L</h3>
+                        {% for item in win_list %}
+                        <div>{{item}}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="=item">
+                        <h3>Match ID</h3>
+                        {% for item in match_list %}
+                        <div>{{item}}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="=item">
+                        <h3>Start Time</h3>
+                        {% for item in start_list %}
+                        <div>{{item}}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="=item">
+                        <h3>Duration</h3>
+                        {% for item in duration_list %}
+                        <div>{{item}}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="=item">
+                        <h3>Hero</h3>
+                        {% for item in hero_list %}
+                        <div>{{item}}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="=item">
+                        <h3>Kills</h3>
+                        {% for item in k_list %}
+                        <div>{{item}}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="=item">
+                        <h3>Deaths</h3>
+                        {% for item in d_list %}
+                        <div>{{item}}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="=item">
+                        <h3>Assists</h3>
+                        {% for item in a_list %}
+                        <div>{{item}}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="column_r"></div>
+        </div>
+        <div class="row center">
+            <h3>KDA of Recent Matches</h3><br/>
+        </div>
+        <div class="row center">
+            <img src="{{ url_for('static', filename = 'kda.png')}}">
+        </div>
+    </body>
+</html>

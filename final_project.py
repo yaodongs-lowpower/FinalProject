@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import requests
 import json
 import secrets # file that contains your API key
@@ -28,8 +29,11 @@ def index():
 def hero_search():
     return render_template('hero_search.html')
 
-@app.route('/handel_hero_search', methods=['POST'])
-def handel_hero_search():
+@app.route('/handle_hero_search', methods=['POST'])
+def handle_hero_search():
+    '''
+    Handel hero name input for hero info display
+    '''
     usr_input = request.form["usr_input"]
     hero_result = search_hero(usr_input)
     #if input not found in DB
@@ -43,8 +47,8 @@ def handel_hero_search():
 def player_search():
     return render_template('player_search.html')
 
-@app.route('/handel_player_search', methods=['POST'])
-def handel_player_search():
+@app.route('/handle_player_search', methods=['POST'])
+def handle_player_search():
     usr_input = request.form["usr_input"]
     #get player id
     player_result = user_search(usr_input)[0]
@@ -63,14 +67,14 @@ def teams():
     teams_dict = get_teams()
     return render_template('teams.html', teams_dict = teams_dict)
 
-@app.route('/handel_teams', methods=['POST'])
-def handel_teams():
+@app.route('/handle_teams', methods=['POST'])
+def handle_teams():
     team = request.form.get("team")
     members = get_players_by_team(team)
     return render_template('team_page.html', members = members, team=team)
 
-@app.route('/handel_player_search_id', methods=['POST'])
-def handel_player_search_id():
+@app.route('/handle_player_search_id', methods=['POST'])
+def handle_player_search_id():
     #get id of player
     id_ = request.form.get("id_")
     name = request.form.get("name")
@@ -107,7 +111,7 @@ def get_teams():
             team_dict[region] = []
         else:
             team_dict[region].append(team)
-    print(team_dict)
+
     return team_dict
 
 def get_players_by_team(team):
@@ -180,6 +184,38 @@ def format_match_info_helper(id_):
     return (win_list, match_list, duration_list, hero_list, start_list, k_list, d_list, a_list)
         
 def draw_kda_win(win_list, k_list, d_list, a_list):
+    '''draw and store kda plot
+
+    Parameters
+    ----------
+    win_list: list
+        won/lost string for recent matches
+    k_list: list
+        number of kills for recent matches
+    d_list: list
+        number of deaths for recent matches
+    a_list: list
+        number of assists for recent matches
+
+    Returns
+    -------
+    N/A
+    '''
+    output_file = "static/kda.png"
+    plt.figure(figsize=(10,2))
+    plt.plot(k_list, 'r', marker='o', label='kill')
+    plt.plot(d_list, 'b', marker='x', label='death')
+    plt.plot(a_list, 'g', marker='d', label='assist')
+    lgd = plt.legend(bbox_to_anchor=(1.02, 1.), loc='upper left', borderaxespad=0.)
+
+    ax = plt.gca()
+    ticks = np.arange(0, len(k_list), 1)
+    ax.set_xticks(ticks)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.xaxis.grid(True)
+    #ax.grid(True)
+    ax.set_xticklabels([])
+    plt.savefig(output_file, bbox_extra_artists=(lgd,), bbox_inches='tight')
     return
 
 def search_hero(usr_input):
@@ -646,8 +682,6 @@ def add_DB_Heroes(hero_list):
     if len(hero_list) == 0:
         #empty input dictinory, return
         return
-    if hero_list[0] == 123:
-        print("===========================ADDed=============================")
     for hero in hero_list:
         cur.execute(insert_heroes, hero)
 
@@ -1092,7 +1126,6 @@ def Heroes_helper(hero_list):
         raw_data = get_data(category, {})
         #if hero info not found in API, use NULLs 
         if raw_data == []:
-            print("========================================HERE=======================================")
             matchup1 = 0
             rate1 = 0
             matchup2 = 0
@@ -1137,7 +1170,6 @@ def Heroes_helper(hero_list):
         rate_3 = rate_data[-3]["rate"]
         #append to entry list
         entry_list.append((hero_id, name, img, bio, matchup1, rate1, matchup2, rate2, matchup3, rate3, matchup_1, rate_1, matchup_2, rate_2, matchup_3, rate_3))
-    print(entry_list)
     return entry_list
 
 def get_n_store_Heroes():
@@ -1159,7 +1191,6 @@ def get_n_store_Heroes():
     entry_list = Heroes_helper(hero_list)
     #store into DB
     construct_DB_Heroes()
-    print("===============FUNCTION*********************")
     add_DB_Heroes(entry_list)
 
 if __name__ == "__main__":
@@ -1170,21 +1201,5 @@ if __name__ == "__main__":
     get_n_store_ActiveProPlayers()
     #run app
     app.run(debug=True)
-    # name_list = ['a','b','c','d','e','f']
-    # in_rate_list = [0.75, 0.67, 0.61, 0.3, 0.36, 0.45]
-    # draw_matchup(name_list, in_rate_list)
-    ######starts here######
-    # # #get proplayer information
-    # get_n_store_ProPlayers()
-    # get_n_store_ActiveProPlayers()
-
-    # # #get recent matches info of a player
-    # account_id = 105248644
-    # get_n_store_recent_matches(account_id)
-
-    # # #search a player's account_id
-    # result = user_search("A Neutral Creep")
-    # print(result)
     
-    # # #get all heroes info
     

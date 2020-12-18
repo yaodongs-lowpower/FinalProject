@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf8"/>
+        <style>
+            * {
+              box-sizing: border-box;
+            }
+            .center {
+                text-align: center;
+            }
+            h1 {
+                font-size: 70px;
+            }
+            .footer {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                text-align: center;
+                width: 100%;
+                color: black;
+                background-color: rgba(129, 129, 129, 0.623);
+            }
+            /* a navagation bar*/
+            .bar {
+                float: left;
+                width: 25%;
+                padding: 10px;
+                height: 50px;
+                background-color: rgba(129, 129, 129, 0.623);
+                text-align: center;
+                font-size: 25px;
+            }
+            /* Create three equal columns that floats next to each other */
+            .column {
+                float: left;
+                width: 20%;
+                padding: 10px;
+                height: 300px; /* Should be removed. Only for demonstration */
+            }
+            
+            /* Clear floats after the columns */
+            .row:after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+
+            /*back ground for body*/
+            body {
+                background-image: url("{{ url_for('static', filename = 'background.jpg')}}");
+                background-repeat: no-repeat;
+                background-attachment: fixed; 
+                background-size: 100% 100%;
+            }
+        </style>
+        <title>Dota2 Info App</title>
+        <h1 class="center">Dota2 App</h1>
+    </head>
+    <body>
+        <div class="row">
+            <a class="bar" href='/'>Home</a>
+            <a class="bar" href='/hero_search'>Hero Search</a>
+            <a class="bar" href='/teams'>Pro Teams</a>
+            <a class="bar" href='/player_search'>Player Search</a>
+        </div>
+        <br/><br/><br/><br/><br/><br/><br/><br/>
+        <div class="row center" >
+        </div>
+        <div class="footer">
+            <h2>
+                Welcom to Dota2 APP, You can search hero bios, pro players or a specific players' recent matches here.
+            </h2>
+        </div>
+    </body>
+</html>

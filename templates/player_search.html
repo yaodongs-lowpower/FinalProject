@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf8"/>
+        <style>
+            * {
+              box-sizing: border-box;
+            }
+            .center {
+                text-align: center;
+            }
+            h1 {
+                font-size: 70px;
+            }
+            .footer {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                text-align: center;
+                width: 100%;
+                color: black;
+                background-color: rgba(129, 129, 129, 0.623);
+            }
+            /* a navagation bar*/
+            .bar {
+                float: left;
+                width: 25%;
+                padding: 10px;
+                height: 50px;
+                background-color: rgba(129, 129, 129, 0.623);
+                text-align: center;
+                font-size: 25px;
+            }
+            /* Create three equal columns that floats next to each other */
+            .column {
+                float: left;
+                width: 30%;
+                padding: 10px;
+            }
+            
+            /* Clear floats after the columns */
+            .row:after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+
+            .search_box{
+                text-align: center;
+                padding: 10px;
+                height: 200px;
+                background-color: rgba(129, 129, 129, 0.623);
+            }
+
+            /*back ground for body*/
+            body {
+                background-image: url("{{ url_for('static', filename = 'background.jpg')}}");
+                background-repeat: no-repeat;
+                background-attachment: fixed; 
+                background-size: 100% 100%;
+            }
+        </style>
+        <title>Dota2 Info App</title>
+        <h1 class="center">Player Search</h1>
+    </head>
+    <body>
+        <div class="row">
+            <a class="bar" href='/'>Home</a>
+            <a class="bar" href='/hero_search'>Hero Search</a>
+            <a class="bar" href='/teams'>Pro Teams</a>
+            <a class="bar" href='/player_search'>Player Search</a>
+        </div>
+        <br/><br/><br/><br/><br/><br/><br/><br/>
+        <div class="row" >
+            <div class="column"></div>
+            <div class="column">
+                <div class="search_box">
+                <form action="/handle_player_search" method="POST">
+                    Type in a player's name for searching (eg: Miracle_)<br/>
+                    <input name="usr_input" type="text"/><br/>
+                    <input type="submit" value="search"/>
+                </form>
+                </div>
+            </div>
+            <div class="column"></div>
+        </div>
+    </body>
+</html>
