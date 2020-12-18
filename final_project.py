@@ -1,15 +1,317 @@
+###local sys path###
 import sys
 sys.path.append('/usr/local/lib/python3.8/site-packages/')
+####################
 
+from flask import Flask, render_template, request
 from bs4 import BeautifulSoup
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 import requests
 import json
 import secrets # file that contains your API key
 import time
 import sqlite3
 
+matplotlib.use('Agg')
+
 #name of the cache
 CACHE_FILENAME = "cache.json"
+#use flask
+app = Flask(__name__)
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/hero_search')
+def hero_search():
+    return render_template('hero_search.html')
+
+@app.route('/handel_hero_search', methods=['POST'])
+def handel_hero_search():
+    usr_input = request.form["usr_input"]
+    hero_result = search_hero(usr_input)
+    #if input not found in DB
+    if len(hero_result)==0:
+        return render_template('not_found.html', usr_input=usr_input)
+    #if found, display it
+    (name, img, bio) = hero_search_parser(hero_result)
+    return render_template('hero_page.html', name=name, img=img, bio=bio)
+
+@app.route('/player_search')
+def player_search():
+    return render_template('player_search.html')
+
+@app.route('/handel_player_search', methods=['POST'])
+def handel_player_search():
+    usr_input = request.form["usr_input"]
+    #get player id
+    player_result = user_search(usr_input)[0]
+    name = player_result["name"]
+    id_ = player_result["account_id"]
+    #get recent matches
+    get_n_store_recent_matches(id_)
+    #format match info helper
+    (win_list, match_list, duration_list, hero_list, start_list, k_list, d_list, a_list) = format_match_info_helper(id_)
+    draw_kda_win(win_list, k_list, d_list, a_list)
+    #display it
+    return render_template('match_page.html', name=name, win_list=win_list,match_list=match_list, duration_list=duration_list, hero_list=hero_list, start_list=start_list, k_list=k_list, d_list=d_list, a_list=a_list)
+
+@app.route('/teams')
+def teams():
+    teams_dict = get_teams()
+    return render_template('teams.html', teams_dict = teams_dict)
+
+@app.route('/handel_teams', methods=['POST'])
+def handel_teams():
+    team = request.form.get("team")
+    members = get_players_by_team(team)
+    return render_template('team_page.html', members = members, team=team)
+
+@app.route('/handel_player_search_id', methods=['POST'])
+def handel_player_search_id():
+    #get id of player
+    id_ = request.form.get("id_")
+    name = request.form.get("name")
+    #find matches of that player
+    get_n_store_recent_matches(id_)
+    #format match info helper
+    (win_list, match_list, duration_list, hero_list, start_list, k_list, d_list, a_list) = format_match_info_helper(id_)
+    draw_kda_win(win_list, k_list, d_list, a_list)
+    #display it
+    return render_template('match_page.html', name=name, win_list=win_list,match_list=match_list, duration_list=duration_list, hero_list=hero_list, start_list=start_list, k_list=k_list, d_list=d_list, a_list=a_list)
+
+def get_teams():
+    ''' get pro team names of each region from DB
+
+    Parameters
+    ----------
+    N/A
+
+    Returns
+    -------
+    dict:
+        team name list under region keys
+    '''
+    query = f'''
+                SELECT  DISTINCT team_name, region
+                FROM    ActiveProPlayers 
+            '''
+    results = DB_query(query)
+    team_dict = {}
+    #make it dict by regions
+    for (team, region) in results:
+        #if empty init as list
+        if region not in team_dict.keys():
+            team_dict[region] = []
+        else:
+            team_dict[region].append(team)
+    print(team_dict)
+    return team_dict
+
+def get_players_by_team(team):
+    ''' get all pro player in the team
+
+    Parameters
+    ----------
+    team: string
+        pro team name
+
+    Returns
+    -------
+    tuple:
+        list of player names and ids,  in the specified team
+    '''
+    query = f'''
+                SELECT  ActiveProPlayers.player_name    AS name, 
+                        ProPlayers.account_id           AS id_
+                FROM    ActiveProPlayers
+                        INNER JOIN ProPlayers 
+                        ON ActiveProPlayers.ProPlayers_table_id = ProPlayers.id
+                WHERE   ActiveProPlayers.team_name = '{team}'
+            '''
+    results = DB_query(query)
+    return results
+
+def format_match_info_helper(id_):
+    ''' use user id_ input to find match info in DB
+    select the needed info for display
+
+    Parameters
+    ----------
+    id_: int
+        player account id
+
+    Returns
+    -------
+    tuple:
+        tuple of match infomation lists
+    '''
+    query = f'''
+                SELECT * 
+                FROM 'PlayerMatches'
+                WHERE account_id = '{id_}'
+    '''
+    entries = DB_query(query)
+    win_list = []
+    match_list = []
+    duration_list = []
+    hero_list = []
+    start_list = []
+    k_list = []
+    d_list = []
+    a_list = []
+    for (id, acnt, match, win, duration, hero_id, s_t, k, d, a) in entries:
+        hero = find_hero_name([hero_id])[0]
+        #translate 0-1 to won and lost
+        if win == 1:
+            win_t = "Won"
+        else:
+            win_t = "Lost"
+        win_list.append(win_t)
+        match_list.append(match)
+        duration_list.append(duration)
+        hero_list.append(hero)
+        start_list.append(s_t)
+        k_list.append(k)
+        d_list.append(d)
+        a_list.append(a)
+    return (win_list, match_list, duration_list, hero_list, start_list, k_list, d_list, a_list)
+        
+def draw_kda_win(win_list, k_list, d_list, a_list):
+    return
+
+def search_hero(usr_input):
+    ''' search hero infomation in database basing on user input
+        if entry doesnt exist, return empty dictionary
+
+    Parameters
+    ----------
+    usr_input: string
+        the input hero name that user want to search
+
+    Returns
+    -------
+    tuple:
+        contains hero name, img link, bio, and matchup info
+    '''
+    query = f'''
+                SELECT * 
+                FROM 'Heroes'
+                WHERE LOWER(name) = '{usr_input.lower()}'
+            '''
+    try:
+        rst = DB_query(query)
+    except:
+        return ()
+    else:
+        if len(rst) == 0:
+            return ()
+
+        return rst[0]
+
+def hero_search_parser(hero_result):
+    ''' function to parse the return entry from Heroes DB
+    find the hero name basing on the hero id
+    call function to draw matchup plot
+
+    Parameters
+    ----------
+    hero_result: tuple
+        contains hero name, img link, bio, and matchup info
+
+    Returns
+    -------
+    tuple:
+        contains hero name, img link, bio
+    '''
+    name_list = find_hero_name([hero_result[4],hero_result[6],hero_result[8],hero_result[10],hero_result[12],hero_result[14]])
+    draw_matchup(name_list,[hero_result[5],hero_result[7],hero_result[9],hero_result[11],hero_result[13],hero_result[15]])
+    return (hero_result[1], hero_result[2], hero_result[3])
+
+def draw_matchup(name_list, in_rate_list):
+    ''' draw bar diagram of hero matchups, store it in static/matchup.png
+
+    Parameters
+    ----------
+    name_list: list
+        matchup hero names
+    in_rate_list: list
+        matchup hero win ratios
+
+    Returns
+    -------
+    N/A
+    '''
+    rate_list = []
+    for rate in in_rate_list:
+        #if data is NULL
+        if rate == "NULL":
+            rate_list.append(0)
+            continue
+        rate = rate * 100
+        rate = round(rate)
+        rate_list.append(rate)
+
+    output_file = 'static/matchup.png'
+    fig, ax1 = plt.subplots(figsize=(9, 8))  # Create the figure
+    pos = np.arange(len(name_list))
+    rects = ax1.barh(pos, rate_list,
+                     align='center',
+                     height=0.5,
+                     tick_label=name_list)
+    ax1.set_title('3 Worst Against Heroes and 3 Best Against Heroes')
+    ax1.set_xlim([0, 100])
+    ax1.xaxis.grid(True, linestyle='--', which='major',
+                   color='grey', alpha=.25)
+
+    # Plot a solid vertical gridline to highlight the median position
+    ax1.axvline(50, color='grey', alpha=0.25)
+    ax1.set_xlabel('Win rate percentage')
+    #print percentage in bars
+    for i in range(len(rects)):
+        rect = rects[i]
+        xloc = -5
+        yloc = rect.get_y() + rect.get_height() / 2
+        width = int(rect.get_width())
+        label = ax1.annotate(
+                str(rate_list[i]), xy=(width, yloc), xytext=(xloc, 0),
+                textcoords="offset points",
+                horizontalalignment='right', verticalalignment='center',
+                weight='bold', clip_on=True)
+    plt.savefig(output_file)
+
+def find_hero_name(id_list):
+    ''' search DB to translate hero_id to hero name
+
+    Parameters
+    ----------
+    id_list: list
+        a list of hero ids
+
+    Returns
+    -------
+    list:
+        list of hero names
+    '''
+    name_list = []
+    for id_ in id_list:
+        if id_ == "NULL":
+            name_list.append("NULL")
+            continue
+        query = f'''
+            SELECT name 
+            FROM 'Heroes'
+            WHERE Id = '{id_}'
+        '''
+        name = DB_query(query)
+        if name == []:
+            name_list.append("NULL")
+            continue
+        name = name[0][0]
+        name_list.append(name)
+    return name_list
 
 def open_cache():
     ''' opens the cache file if it exists and loads the JSON into
@@ -344,7 +646,8 @@ def add_DB_Heroes(hero_list):
     if len(hero_list) == 0:
         #empty input dictinory, return
         return
-    
+    if hero_list[0] == 123:
+        print("===========================ADDed=============================")
     for hero in hero_list:
         cur.execute(insert_heroes, hero)
 
@@ -537,7 +840,7 @@ def PlayerMatches_helper(raw_list, account_id):
     ----------
     account_id: int
         the account id of a player
-    result_list: list
+    raw_list: list
         a list of player recent matches from API
     
     Returns
@@ -674,7 +977,8 @@ def get_hero_detail(hero_links):
     
     Parameters
     ----------
-    N/A
+    list:
+        a list of url string to hero detail page
     
     Returns
     -------
@@ -735,7 +1039,11 @@ def get_hero_info_api():
     for key in hero_dict.keys():
         hero = hero_dict[key]
         new_dict[hero["localized_name"]] = hero
-
+    #PATCH# add new hero entry
+    patch_dict = {}
+    patch_dict["id"] = 123
+    new_dict["Hoodwink"]=patch_dict
+    #end PATCH
     return new_dict
 
 def sort_helper(matchup_dict):
@@ -759,7 +1067,8 @@ def Heroes_helper(hero_list):
     
     Parameters
     ----------
-    N/A
+    list:
+        a list of dictionaries, contains hero name, bio and link to img
     
     Returns
     -------
@@ -773,10 +1082,31 @@ def Heroes_helper(hero_list):
         name = hero["name"]
         img = hero["img"]
         bio = hero["bio"]
-        hero_id = hero_dict[name]["id"]
+        #check key
+        if name not in hero_dict.keys():
+            hero_id = 0
+        else:
+            hero_id = hero_dict[name]["id"]
         #get matchup data
         category = f"heroes/{hero_id}/matchups"
         raw_data = get_data(category, {})
+        #if hero info not found in API, use NULLs 
+        if raw_data == []:
+            print("========================================HERE========================================")
+            matchup1 = 0
+            rate1 = 0
+            matchup2 = 0
+            rate2 = 0
+            matchup3 = 0
+            rate3 = 0
+            matchup_1 = 0
+            rate_1 = 0
+            matchup_2 = 0
+            rate_2 = 0
+            matchup_3 = 0
+            rate_3 = 0
+            entry_list.append((hero_id, name, img, bio, matchup1, rate1, matchup2, rate2, matchup3, rate3, matchup_1, rate_1, matchup_2, rate_2, matchup_3, rate_3))
+            continue
         rate_data = []
         #calculate win rate
         for matchup in raw_data:
@@ -807,7 +1137,7 @@ def Heroes_helper(hero_list):
         rate_3 = rate_data[-3]["rate"]
         #append to entry list
         entry_list.append((hero_id, name, img, bio, matchup1, rate1, matchup2, rate2, matchup3, rate3, matchup_1, rate_1, matchup_2, rate_2, matchup_3, rate_3))
-
+    print(entry_list)
     return entry_list
 
 def get_n_store_Heroes():
@@ -829,40 +1159,32 @@ def get_n_store_Heroes():
     entry_list = Heroes_helper(hero_list)
     #store into DB
     construct_DB_Heroes()
+    print("===============FUNCTION*********************")
     add_DB_Heroes(entry_list)
 
-
 if __name__ == "__main__":
-    # #example of ProPlayer seaching, params is empty for this example
-    # category = "ProPlayers"
-    # params = {}
-    # rst_dict = get_data(category, params)
-    # print(rst_dict[0])
-
-    # construct_DB_ProPlayers()
-    # construct_DB_Matches()
-    # # for i in range(len(rst_dict)):
-    # #     add_DB_Players(rst_dict[i])
-
-    # player_Miracle = rst_dict[656]
-
-    # #example of get match data
-    # category = "matches/5729327011"
-    # rst_dict = get_data(category, params)
-    # print(rst_dict["players"][0])
-
-    ######starts here######
-    # #get proplayer information
-    #get_n_store_ProPlayers()
-    #get_n_store_ActiveProPlayers()
-
-    # #get recent matches info of a player
-    #account_id = 105248644
-    #get_n_store_recent_matches(account_id)
-
-    # #search a player's account_id
-    #result = user_search("A Neutral Creep")
-    #print(result)
-    
-    # #get all heroes info
+    print('starting Flask app', app.name)
+    #get data
     get_n_store_Heroes()
+    get_n_store_ProPlayers()
+    get_n_store_ActiveProPlayers()
+    #run app
+    app.run(debug=True)
+    # name_list = ['a','b','c','d','e','f']
+    # in_rate_list = [0.75, 0.67, 0.61, 0.3, 0.36, 0.45]
+    # draw_matchup(name_list, in_rate_list)
+    ######starts here######
+    # # #get proplayer information
+    # get_n_store_ProPlayers()
+    # get_n_store_ActiveProPlayers()
+
+    # # #get recent matches info of a player
+    # account_id = 105248644
+    # get_n_store_recent_matches(account_id)
+
+    # # #search a player's account_id
+    # result = user_search("A Neutral Creep")
+    # print(result)
+    
+    # # #get all heroes info
+    
